@@ -1,0 +1,435 @@
+---
+title: "House Selling New"
+author: "Neal Daniels"
+date: "February 10, 2020"
+output: 
+    html_document:
+      code_folding: hide
+      theme: cerulean
+---
+
+When it comes to houses and real estate value, there are many different factors that influence its value. Some peopole argue that it's location, location, location while others argue that it has to do with the size of the house or how many bathrooms it has. 
+
+In order to mathematically analyze this, we have a dataset which has the Sales Price mentioned, among other variables. Certain values are categorical values but we convert them into numeric values in order to use a pairs plot.
+
+A Pairs plot helps us distinguish which variables correlate with one value. In this case, we're deciphering what values linearly correlate with the Sales Price
+
+
+Now, we can do a pair plot involving all the variables but that would be very messy, hard to read, and some variables don't have a lot of values. Due to the last reasson, we exclude PoolQC, MiscFeature, Alley, Fence, and instead try to look for high correlations showned to us in the graphs. 
+
+```{r message=FALSE, warning=FALSE}
+
+library(mosaic)
+library(DT)
+library(readr)
+library(GGally)
+library(tidyverse)
+library(pander)
+
+train <- read_csv("C:/Users/Neal Daniels/Downloads/train.csv") %>%
+  mutate(MSZoning = case_when(
+    str_detect(MSZoning, "C (all)") ~ 2,
+    str_detect(MSZoning, "FV") ~ 3,
+    str_detect(MSZoning, "RH") ~ 4, 
+    str_detect(MSZoning, "RL") ~ 5,
+    str_detect(MSZoning, "RM") ~ 6
+  ),
+  Street = case_when(
+    str_detect(Street, "Grvl") ~ 7,
+    str_detect(Street, "Pave") ~ 8
+  ),
+  Alley = case_when(
+    str_detect(Alley, "Grvl") ~ 9,
+    str_detect(Alley, "Pave") ~ 10
+  ),
+  LotShape = case_when(
+    str_detect(LotShape, "IR1") ~ 11,
+    str_detect(LotShape, "IR2") ~ 12,
+    str_detect(LotShape, "IR3") ~ 13,
+    str_detect(LotShape, "Reg") ~ 14
+  ),
+  LandContour = case_when(
+    str_detect(LandContour, "Bnk") ~ 15,
+    str_detect(LandContour, "HLS") ~ 16,
+    str_detect(LandContour, "Low") ~ 17,
+    str_detect(LandContour, "Lvl") ~ 18
+  ),
+  Utilities = case_when(
+    str_detect(Utilities, "AllPub") ~ 19,
+    str_detect(Utilities, "NoSeWa") ~ 20
+  ),
+  LotConfig = case_when(
+    str_detect(LotConfig, "Corner") ~ 21,
+    str_detect(LotConfig, "CulDSac") ~ 22,
+    str_detect(LotConfig, "FR2") ~ 23,
+    str_detect(LotConfig, "FR3") ~ 24,
+    str_detect(LotConfig, "Inside") ~ 25
+  ),
+  LandSlope = case_when(
+    str_detect(LandSlope, "Gtl") ~ 26,
+    str_detect(LandSlope, "Mod") ~ 27,
+    str_detect(LandSlope, "Sev") ~ 28
+  ),
+  Neighborhood = case_when(
+    str_detect(Neighborhood, "Blmngtn") ~ 29,
+    str_detect(Neighborhood, "Blueste") ~ 30,
+    str_detect(Neighborhood, "BrDale") ~ 31,
+    str_detect(Neighborhood, "BrkSide") ~ 32,
+      str_detect(Neighborhood, "ClearCr") ~ 33,
+    str_detect(Neighborhood, "CollgCr") ~ 34,
+    str_detect(Neighborhood, "Crawfor") ~ 35,
+    str_detect(Neighborhood, "Edwards") ~ 36,
+      str_detect(Neighborhood, "Gilbert") ~ 37,
+    str_detect(Neighborhood, "IDOTRR") ~ 38,
+    str_detect(Neighborhood, "MeadowV") ~ 39,
+    str_detect(Neighborhood, "Mitchel") ~ 40,
+      str_detect(Neighborhood, "NAmes") ~ 41,
+    str_detect(Neighborhood, "NoRidge") ~ 42,
+    str_detect(Neighborhood, "NPkVill") ~ 43,
+    str_detect(Neighborhood, "NridgHt") ~ 44,
+    str_detect(Neighborhood, "OldTown") ~ 45,
+    str_detect(Neighborhood, "Sawyer") ~ 46,
+    str_detect(Neighborhood, "SawyerW") ~ 47,
+    str_detect(Neighborhood, "Somerst") ~ 48,
+    str_detect(Neighborhood, "StoneBr") ~ 49,
+    str_detect(Neighborhood, "SWISU") ~ 50,
+    str_detect(Neighborhood, "Timber") ~ 51,
+    str_detect(Neighborhood, "Veenker") ~ 52
+  ),
+  Condition1 = case_when(
+    str_detect(Condition1, "Artery") ~ 53,
+    str_detect(Condition1, "Feedr") ~ 54,
+    str_detect(Condition1, "Norm") ~ 55,
+    str_detect(Condition1, "PosA") ~ 56,
+    str_detect(Condition1, "PosN") ~ 57,
+    str_detect(Condition1, "RRAe") ~ 58,
+    str_detect(Condition1, "RRAn") ~ 59,
+    str_detect(Condition1, "RRNe") ~ 60,
+    str_detect(Condition1, "RRNn") ~ 61
+  ),
+   Condition2 = case_when(
+       str_detect(Condition2, "Artery") ~ 62,
+    str_detect(Condition2, "Feedr") ~ 63,
+    str_detect(Condition2, "Norm") ~ 64,
+    str_detect(Condition2, "PosA") ~ 65,
+    str_detect(Condition2, "PosN") ~ 66,
+    str_detect(Condition2, "RRAe") ~ 67,
+    str_detect(Condition2, "RRAn") ~ 68,
+    str_detect(Condition2, "RRNn") ~ 69
+   ),
+  BldgType = case_when(
+    str_detect(BldgType, "1Fam") ~ 70,
+    str_detect(BldgType, "2fmCon") ~ 71,
+    str_detect(BldgType, "Duplex") ~ 72,
+    str_detect(BldgType, "Twnhs") ~ 73,
+    str_detect(BldgType, "TwnhsE") ~ 74
+  ),
+  HouseStyle = case_when(
+    str_detect(HouseStyle, "1.5Fin") ~ 75,
+    str_detect(HouseStyle, "1.5Unf") ~ 76,
+    str_detect(HouseStyle, "1Story") ~ 77,
+    str_detect(HouseStyle, "2.5Fin") ~ 78,
+    str_detect(HouseStyle, "2.5Unf") ~ 79,
+    str_detect(HouseStyle, "2Story") ~ 80,
+    str_detect(HouseStyle, "SFoyer") ~ 81,
+    str_detect(HouseStyle, "SLvl") ~ 82
+  ),
+  RoofStyle = case_when(
+    str_detect(RoofStyle, "Flat") ~ 83,
+    str_detect(RoofStyle, "Gable") ~ 84,
+    str_detect(RoofStyle, "Gambrel") ~ 85,
+    str_detect(RoofStyle, "Hip") ~ 86,
+    str_detect(RoofStyle, "Mansard") ~ 87,
+    str_detect(RoofStyle, "Shed") ~ 88
+  ),
+  RoofMatl = case_when(
+    str_detect(RoofMatl, "ClyTile") ~ 89,
+    str_detect(RoofMatl, "CompShg") ~ 90,
+    str_detect(RoofMatl, "Membran") ~ 91,
+    str_detect(RoofMatl, "Metal") ~ 92,
+    str_detect(RoofMatl, "Roll") ~ 93,
+    str_detect(RoofMatl, "Tar&Grv") ~ 94,
+    str_detect(RoofMatl, "WdShake") ~ 95,
+    str_detect(RoofMatl, "WdShngl") ~96
+  ),
+  Exterior1st = case_when(
+    str_detect(Exterior1st, "AsbShng") ~ 97,
+    str_detect(Exterior1st, "AsphShn") ~ 98,
+    str_detect(Exterior1st, "BrkComm") ~ 99,
+    str_detect(Exterior1st, "BrkFace") ~ 2,
+    str_detect(Exterior1st, "CBlock") ~ 3,
+    str_detect(Exterior1st, "CemntBd") ~ 4,
+    str_detect(Exterior1st, "HdBoard") ~ 5,
+    str_detect(Exterior1st, "ImStucc") ~ 6,
+    str_detect(Exterior1st, "MetalSd") ~ 7,
+    str_detect(Exterior1st, "Plywood") ~ 8,
+    str_detect(Exterior1st, "Stone") ~ 9,
+    str_detect(Exterior1st, "Stucco") ~ 10,
+    str_detect(Exterior1st, "VinylSd") ~ 11,
+    str_detect(Exterior1st, "Wd Sdng") ~ 12,
+    str_detect(Exterior1st, "WdShing") ~ 13
+  ),
+  Exterior2nd = case_when(
+       str_detect(Exterior2nd, "AsbShng") ~ 14,
+    str_detect(Exterior2nd, "AsphShn") ~ 15,
+    str_detect(Exterior2nd, "Brk Cmn") ~ 16,
+    str_detect(Exterior2nd, "BrkFace") ~ 18,
+    str_detect(Exterior2nd, "CBlock") ~ 19,
+    str_detect(Exterior2nd, "CemntBd") ~ 20,
+    str_detect(Exterior2nd, "HdBoard") ~ 21,
+    str_detect(Exterior2nd, "ImStucc") ~ 22,
+    str_detect(Exterior2nd, "MetalSd") ~ 23,
+    str_detect(Exterior2nd, "Plywood") ~ 24,
+    str_detect(Exterior2nd, "Stone") ~ 25,
+    str_detect(Exterior2nd, "Stucco") ~ 26,
+    str_detect(Exterior2nd, "VinylSd") ~ 27,
+    str_detect(Exterior2nd, "Wd Sdng") ~ 28,
+    str_detect(Exterior2nd, "Wd Shng") ~ 29
+  ),
+  MasVnrType = case_when(
+    str_detect(MasVnrType, "BrkCmn") ~ 30,
+    str_detect(MasVnrType, "BrkFace") ~ 31,
+    str_detect(MasVnrType, "None") ~ 32,
+    str_detect(MasVnrType, "Stone") ~ 33
+  ),
+  ExterQual = case_when(
+    str_detect(ExterQual, "Ex") ~ 34,
+    str_detect(ExterQual, "Fa") ~ 35,
+    str_detect(ExterQual, "Gd") ~ 36,
+    str_detect(ExterQual, "TA") ~ 37
+  ),
+  ExterCond = case_when(
+    str_detect(ExterCond, "Ex") ~ 38,
+    str_detect(ExterCond, "Fa") ~ 39,
+    str_detect(ExterCond, "Gd") ~ 40,
+    str_detect(ExterCond, "Po") ~ 41,
+    str_detect(ExterCond, "TA") ~ 42
+  ),
+  Foundation = case_when(
+    str_detect(Foundation, "BrkTil") ~ 43,
+    str_detect(Foundation, "CBlock") ~ 44,
+    str_detect(Foundation, "PConc") ~ 45,
+    str_detect(Foundation, "Slab") ~ 46,
+    str_detect(Foundation, "Stone") ~ 47,
+    str_detect(Foundation, "Wood") ~ 48
+  ),
+  BsmtQual = case_when(
+    str_detect(BsmtQual, "Ex") ~ 49,
+    str_detect(BsmtQual, "Fa") ~ 50,
+    str_detect(BsmtQual, "Gd") ~ 51,
+    str_detect(BsmtQual, "TA") ~ 52
+  ),
+  BsmtCond = case_when(
+    str_detect(BsmtCond, "Fa") ~ 53,
+    str_detect(BsmtCond, "Gd") ~ 54,
+    str_detect(BsmtCond, "Po") ~ 55,
+    str_detect(BsmtCond, "TA") ~ 56
+  ),
+  BsmtExposure = case_when(
+    str_detect(BsmtExposure, "AV") ~ 57,
+    str_detect(BsmtExposure, "Gd") ~ 58,
+    str_detect(BsmtExposure, "Mn") ~ 59,
+    str_detect(BsmtExposure, "No") ~ 60
+  ),
+  BsmtFinType1 = case_when(
+    str_detect(BsmtFinType1, "ALQ") ~ 61,
+    str_detect(BsmtFinType1, "BLQ") ~ 62,
+    str_detect(BsmtFinType1, "GLQ") ~ 63,
+    str_detect(BsmtFinType1, "LwQ") ~ 64,
+    str_detect(BsmtFinType1, "Rec") ~ 65,
+    str_detect(BsmtFinType1, "Unf") ~ 66
+  ),
+  BsmtFinType2 = case_when(
+    str_detect(BsmtFinType2, "ALQ") ~ 67,
+    str_detect(BsmtFinType2, "BLQ") ~ 68,
+    str_detect(BsmtFinType2, "GLQ") ~ 69,
+    str_detect(BsmtFinType2, "LwQ") ~ 70,
+    str_detect(BsmtFinType2, "Rec") ~ 71,
+    str_detect(BsmtFinType2, "Unf") ~ 72
+    ),
+  Heating = case_when(
+    str_detect(Heating, "Floor") ~ 73,
+    str_detect(Heating, "GasA") ~ 74,
+    str_detect(Heating, "GasW") ~ 75,
+    str_detect(Heating, "Grav") ~ 76,
+    str_detect(Heating, "OthW") ~ 77,
+    str_detect(Heating, "Wall") ~ 78
+  ),
+  HeatingQC = case_when(
+    str_detect(HeatingQC, "Ex") ~ 79,
+    str_detect(HeatingQC, "Fa") ~ 80,
+    str_detect(HeatingQC, "Gd") ~ 81,
+    str_detect(HeatingQC, "Po") ~ 82,
+    str_detect(HeatingQC, "TA") ~ 83 
+  ),
+  CentralAir = case_when(
+    str_detect(CentralAir, "N") ~ 84,
+    str_detect(CentralAir, "Y") ~ 85
+  ),
+  Electrical = case_when(
+    str_detect(Electrical, "FuseA") ~ 86,
+    str_detect(Electrical, "FuseF") ~ 87,
+    str_detect(Electrical, "FuseP") ~ 88,
+    str_detect(Electrical, "Mix") ~ 89,
+    str_detect(Electrical, "SBrkr") ~ 90
+  ),
+  KitchenQual = case_when(
+    str_detect(KitchenQual, "Ex") ~ 91,
+    str_detect(KitchenQual, "Fa") ~ 92,
+    str_detect(KitchenQual, "Gd") ~ 93,
+    str_detect(KitchenQual, "TA") ~ 94
+  ),
+  Functional = case_when(
+    str_detect(Functional, "Maj1") ~ 95,
+    str_detect(Functional, "Maj2") ~ 96,
+    str_detect(Functional, "Min1") ~ 97,
+    str_detect(Functional, "Min2") ~ 98,
+    str_detect(Functional, "Mod") ~ 99,
+    str_detect(Functional, "Sev") ~ 100,
+    str_detect(Functional, "Typ") ~ 3
+  ),
+  FireplaceQu = case_when(
+    str_detect(FireplaceQu, "Ex") ~ 4,
+    str_detect(FireplaceQu, "Fa") ~ 5,
+    str_detect(FireplaceQu, "Gd") ~ 6,
+    str_detect(FireplaceQu, "Po") ~ 7,
+    str_detect(FireplaceQu, "TA") ~ 8
+  ),
+  GarageType = case_when(
+    str_detect(GarageType, "2Types") ~ 9,
+    str_detect(GarageType, "Attchd") ~ 10,
+    str_detect(GarageType, "Basment") ~ 11,
+    str_detect(GarageType, "BuiltIn") ~ 12,
+    str_detect(GarageType, "CarPort") ~ 13,
+    str_detect(GarageType, "Detchd") ~ 14
+  ),
+  GarageFinish = case_when(
+    str_detect(GarageFinish, "Fin") ~ 15,
+    str_detect(GarageFinish, "RFn") ~ 16,
+    str_detect(GarageFinish, "Unf") ~ 17
+  ),
+  GarageQual = case_when(
+    str_detect(GarageQual, "Ex") ~ 18,
+    str_detect(GarageQual, "Fa") ~ 19,
+    str_detect(GarageQual, "Gd") ~ 20,
+    str_detect(GarageQual, "Po") ~ 21,
+    str_detect(GarageQual, "TA") ~ 22
+  ),
+  GarageCond = case_when(
+    str_detect(GarageCond, "Ex") ~ 23,
+    str_detect(GarageCond, "Fa") ~ 24,
+    str_detect(GarageCond, "Gd") ~ 25,
+    str_detect(GarageCond, "Po") ~ 26,
+    str_detect(GarageCond, "TA") ~ 27
+  ),
+  PavedDrive = case_when(
+    str_detect(PavedDrive, "N") ~ 28,
+    str_detect(PavedDrive, "P") ~ 29,
+    str_detect(PavedDrive, "Y") ~ 30
+  ),
+  Fence = case_when(
+    str_detect(Fence, "GdPrv") ~ 31,
+    str_detect(Fence, "GdWo") ~ 32,
+    str_detect(Fence, "MnPrv") ~ 33,
+    str_detect(Fence, "MnWw") ~ 34
+  ),
+  PoolQC = case_when(
+    str_detect(PoolQC, "Ex") ~ 35,
+    str_detect(PoolQC, "Fa") ~ 36,
+    str_detect(PoolQC, "Gd") ~ 37
+  ),
+  MiscFeature = case_when(
+    str_detect(MiscFeature, "Gar2")~ 38,
+    str_detect(MiscFeature, "Othr") ~ 39,
+    str_detect(MiscFeature, "Shed") ~ 40,
+    str_detect(MiscFeature, "TenC") ~ 41
+  ),
+  SaleType = case_when(
+    str_detect(SaleType, "COD") ~ 42,
+    str_detect(SaleType, "Con") ~ 43,
+    str_detect(SaleType, "ConLD") ~ 44,
+    str_detect(SaleType, "ConLI") ~ 45,
+    str_detect(SaleType, "ConLw") ~ 46,
+    str_detect(SaleType, "CWD") ~ 47,
+    str_detect(SaleType, "New") ~ 48,
+    str_detect(SaleType, "Oth") ~ 49,
+    str_detect(SaleType, "WD") ~ 50
+  ),
+  SaleCondition = case_when(
+    str_detect(SaleCondition, "Abnorml") ~ 51,
+    str_detect(SaleCondition, "AdjLand") ~ 52,
+    str_detect(SaleCondition, "Alloca") ~ 53,
+    str_detect(SaleCondition, "Family") ~ 54,
+    str_detect(SaleCondition, "Normal") ~ 55,
+    str_detect(SaleCondition, "Partial") ~ 56
+  )
+)
+
+pairs(train[, c(81,1,2,3,4)], panel = panel.smooth)
+
+pairs(train[, c(81,6,8,9,10)], panel = panel.smooth)
+pairs(train[, c(81,11,12,13,14,15)], panel = panel.smooth)
+pairs(train[, c(81,16,17,18,19,20)], panel = panel.smooth)
+pairs(train[, c(81,21,22,23,24,25)], panel = panel.smooth)
+pairs(train[, c(81,26,27,28,29,30)], panel = panel.smooth)
+pairs(train[, c(81,31,32,33,34,35)], panel = panel.smooth)
+pairs(train[, c(81,36,37,38,39,40)], panel = panel.smooth)
+pairs(train[, c(81,41,42,43,44,45)], panel = panel.smooth)
+pairs(train[, c(81,46,47,48,49)], panel = panel.smooth)
+pairs(train[, c(81,50,51,52,53)], panel = panel.smooth)
+pairs(train[, c(81,54,55,56,57)], panel = panel.smooth)
+pairs(train[, c(81,58,59,60,61)], panel = panel.smooth)
+pairs(train[, c(81,62,63,64,65)], panel = panel.smooth)
+pairs(train[, c(81,66,67,68,69)], panel = panel.smooth)
+pairs(train[, c(81,70,71,72,75)], panel = panel.smooth)
+pairs(train[, c(81,76,77,78,79,80)], panel = panel.smooth)
+```
+
+From the work we did up above, we can then isolate variables of interest and then narrow down which variables are of significance and which ones aren't. 
+
+```{r}
+pairs(train[, c(81, 13, 15, 18, 20)], panel = panel.smooth)
+
+pairs(train[, c(81,27, 28,30, 34)], panel = panel.smooth)
+
+pairs(train[, c(81,5,31, 39, 44)], panel = panel.smooth)
+
+pairs(train[, c(81, 47, 50, 54, 55, 63 )], panel = panel.smooth)
+
+
+
+```
+
+ OverallQual, MasVnrArea, TotalBsmtSF(Squared), 1stFlrSF,GrLivArea, TotRmsAbvGrd, GarageArea
+
+
+Positive Variables: YearBuilt (small), OverallQual, YearRemodAdd(small), MasVnrArea (large), 1stFlrSF(large), 2ndFlrSF (medium), GrLivArea, TotRmsAbvGrd, GarageArea, 
+
+Negative Variables:Exterior1st, ExterQual
+
+Squared Variables: BsmtFinSF1(positive), TotalBsmtSF, 
+
+
+
+```{r}
+LinearRelate <- function(value){
+  lm_ColN <- lm(SalePrice~ value, data = train)
+  return(pander(summary(lm_ColN)))
+}
+
+lmGarage <- lm(SalePrice ~ GarageArea, data = train)
+pander(summary(lmGarage))
+```
+
+# LotArea
+```{r message=FALSE, warning=FALSE}
+lmFinal <- lm(SalePrice ~ GarageArea + TotRmsAbvGrd + GrLivArea + MasVnrArea + `1stFlrSF` + TotalBsmtSF, data = train)
+
+lmF2 <- lm(SalePrice ~ GarageArea + TotRmsAbvGrd + KitchenQual +TotalBsmtSF +GrLivArea, data = train)
+
+pander(summary(lmFinal))
+
+pander(summary(lmF2))
+
+```
+
